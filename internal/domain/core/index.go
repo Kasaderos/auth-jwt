@@ -27,7 +27,7 @@ func New(
 	c := &St{
 		lg:   lg,
 		repo: repo,
-		mail: mail,
+		Mail: mail,
 	}
 	c.User = NewUser(c)
 

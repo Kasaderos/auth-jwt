@@ -10,13 +10,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Create the JWT key used to create the signature
-var jwtKey = []byte("my_secret_key")
+var tokenTTL = 30 * time.Minute
 
-var users = map[string]string{
-	"user1": "password1",
-	"user2": "password2",
-}
+// Create the JWT key used to create the signature
+var jwtKey = []byte("auth-jwt-1234")
 
 // @Router   /register [post]
 // @Tags     register
@@ -70,20 +67,17 @@ func (o *St) hAuth(c *gin.Context) {
 		return
 	}
 
-	// TODO repo
-	// Get the expected password from our in memory map
-	expectedPassword, ok := users[creds.Login]
-	// If a password exists for the given user
-	// AND, if it is the same as the password we received, the we can move ahead
-	// if NOT, then we return an "Unauthorized" status
-	if !ok || expectedPassword != creds.Password {
+	// TODO validate
+
+	user, err := o.ucs.GetUserByEmail(o.getRequestContext(c), creds.Login)
+	if Error(c, err) || user.Password != creds.Password {
 		c.Writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	// Declare the expiration time of the token
 	// here, we have kept it as 30 minutes
-	expirationTime := time.Now().Add(30 * time.Minute)
+	expirationTime := time.Now().Add(tokenTTL)
 	// Create the JWT claims, which includes the username and expiry time
 	claims := &entities.Claims{
 		Login: creds.Login,
@@ -122,11 +116,13 @@ func (o *St) hRefresh(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	tknStr := c.Value
 	claims := &entities.Claims{}
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
+
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			c.Writer.WriteHeader(http.StatusUnauthorized)
@@ -135,6 +131,7 @@ func (o *St) hRefresh(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	if !tkn.Valid {
 		c.Writer.WriteHeader(http.StatusUnauthorized)
 		return
@@ -193,6 +190,7 @@ func (o *St) hProfile(c *gin.Context) {
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
+
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			c.Writer.WriteHeader(http.StatusUnauthorized)
@@ -201,13 +199,19 @@ func (o *St) hProfile(c *gin.Context) {
 		c.Writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	if !tkn.Valid {
 		c.Writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	// Finally, return the welcome message to the user, along with their
-	// username given in the token
-	c.Writer.Write([]byte(fmt.Sprintf("Welcome %s!", claims.Username)))
+
+	user, err := o.ucs.GetUserByEmail(o.getRequestContext(c), creds.Login)
+	if Error(c, err) {
+		c.Writer.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
 func (o *St) hLogout(c *gin.Context) {

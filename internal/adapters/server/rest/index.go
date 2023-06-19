@@ -10,11 +10,12 @@ import (
 )
 
 type St struct {
-	lg  logger.Lite
-	ucs *usecases.St
+	lg      logger.Lite
+	baseURL string
+	ucs     *usecases.St
 }
 
-func GetHandler(lg logger.Lite, ucs *usecases.St, withCors bool) http.Handler {
+func GetHandler(lg logger.Lite, ucs *usecases.St, withCors bool, baseURL string) http.Handler {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
@@ -28,7 +29,7 @@ func GetHandler(lg logger.Lite, ucs *usecases.St, withCors bool) http.Handler {
 
 	// handlers
 
-	s := &St{lg: lg, ucs: ucs}
+	s := &St{lg: lg, ucs: ucs, baseURL: baseURL}
 
 	// healthcheck
 	r.GET("/healthcheck", func(c *gin.Context) { c.Status(http.StatusOK) })
@@ -44,8 +45,7 @@ func GetHandler(lg logger.Lite, ucs *usecases.St, withCors bool) http.Handler {
 	r.POST("/auth/by_refresh_token", s.hRefresh)
 	r.GET("/profile", s.hProfile)
 	r.POST("/logout", s.hLogout)
-	// TODO
-	//r.POST("/register", s.hUserUpdate)
+	r.POST("/register", s.hRegister)
 	return r
 }
 

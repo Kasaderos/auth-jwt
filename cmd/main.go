@@ -83,7 +83,7 @@ func main() {
 	app.srv = server.Start(
 		app.lg,
 		conf.HttpListen,
-		rest.GetHandler(app.lg, app.ucs, conf.HttpCors),
+		rest.GetHandler(app.lg, app.ucs, conf.HttpCors, conf.BaseURL),
 	)
 
 	// LISTEN

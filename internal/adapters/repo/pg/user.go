@@ -28,6 +28,29 @@ func (d *St) UserGet(ctx context.Context, id int64) (*entities.UserSt, error) {
 	return &result, err
 }
 
+func (d *St) UserGetByEmail(ctx context.Context, email string) (*entities.UserSt, error) {
+	var result entities.UserSt
+
+	err := d.db.QueryRow(ctx, `
+		select
+			id,
+  	  name,
+  		email,
+  		password,
+			birthdate
+		from users
+		where email = $1
+	`, email).Scan(
+		&result.ID,
+		&result.Name,
+		&result.Email,
+		&result.Password,
+		&result.Birthdate,
+	)
+
+	return &result, err
+}
+
 func (d *St) UserUpdate(ctx context.Context, id int64, obj *entities.UserCUSt) error {
 	fields := d.getUserFields(obj)
 	cols := d.tPrepareFieldsToUpdate(fields)

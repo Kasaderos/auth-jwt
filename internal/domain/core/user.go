@@ -35,6 +35,21 @@ func (c *User) Get(ctx context.Context, id int64, errNE bool) (*entities.UserSt,
 	return result, nil
 }
 
+func (c *User) GetByEmail(ctx context.Context, email string, errNE bool) (*entities.UserSt, error) {
+	result, err := c.r.repo.UserGetByEmail(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		if errNE {
+			return nil, errs.ObjectNotFound
+		}
+		return nil, nil
+	}
+
+	return result, nil
+}
+
 func (c *User) Create(ctx context.Context, obj *entities.UserCUSt) (int64, error) {
 	var err error
 
